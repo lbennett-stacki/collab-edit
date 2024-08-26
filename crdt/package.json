@@ -1,0 +1,16 @@
+{
+  "name": "@lbennett/collab-text-ctdt",
+  "version": "0.0.0",
+  "description": "collaborative text editing with conflict-free replicated data types",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "vitest"
+  },
+  "author": "Luke Bennett <lbennett@fastmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.5.0",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
+  }
+}
