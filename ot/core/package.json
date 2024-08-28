@@ -1,0 +1,39 @@
+{
+  "name": "@lbennett/collab-text-ot-core",
+  "private": true,
+  "version": "0.0.0",
+  "author": "Luke Bennett <lbennett@fastmail.com>",
+  "license": "MIT",
+  "main": "./dist/client/lib.js",
+  "types": "./dist/client/lib.d.ts",
+  "files": [
+    "./dist"
+  ],
+  "exports": {
+    ".": {
+      "default": "./dist/client/lib.js",
+      "types": "./dist/client/lib.d.ts"
+    },
+    "./client": {
+      "default": "./dist/client/lib.js",
+      "types": "./dist/client/lib.d.ts"
+    },
+    "./server": {
+      "default": "./dist/server/lib.js",
+      "types": "./dist/server/lib.d.ts"
+    }
+  },
+  "scripts": {
+    "test": "vitest",
+    "test:debug": "vitest --inspect-brk --no-file-parallelism",
+    "build": "tsc",
+    "dev": "tsc -w"
+  },
+  "devDependencies": {
+    "@types/node": "^22.5.0",
+    "tsx": "^4.17.0",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
+  },
+  "dependencies": {}
+}
