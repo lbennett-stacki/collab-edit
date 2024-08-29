@@ -1,4 +1,5 @@
 import { assert } from "../validation/assert";
+import { OperationType } from "./Operation";
 import { StringOperation } from "./StringOperation";
 
 export class InsertOperation extends StringOperation {
@@ -6,7 +7,7 @@ export class InsertOperation extends StringOperation {
     position: number,
     public readonly value: string,
   ) {
-    super("insert", position);
+    super(OperationType.InsertOperation, position);
   }
 
   operate(content: string): string {
@@ -26,7 +27,7 @@ export class InsertOperation extends StringOperation {
   static deserialize(data: string | object): InsertOperation {
     const pojo = typeof data === "string" ? JSON.parse(data) : data;
 
-    assert(pojo.type).is("insert");
+    assert(pojo.type).is(OperationType.InsertOperation);
     assert(pojo.position).isNumber();
     assert(pojo.value).isString();
 

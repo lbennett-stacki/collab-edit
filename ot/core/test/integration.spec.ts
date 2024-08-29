@@ -1,15 +1,11 @@
 import { test, describe, expect } from "vitest";
 import { ServerDocument } from "../src/server/ServerDocument";
-import { StringifyLogger } from "../src/logger/StringifyLogger";
 
 describe("integration", () => {
   test("single insert", () => {
-    const logger = new StringifyLogger();
-    logger.silent();
-
-    const serverDoc = new ServerDocument("Hello", logger);
-    const sorayaDoc = serverDoc.forkClient(logger);
-    const zhenDoc = serverDoc.forkClient(logger);
+    const serverDoc = new ServerDocument("Hello");
+    const sorayaDoc = serverDoc.forkClient("soraya");
+    const zhenDoc = serverDoc.forkClient("zhen");
 
     const targetString = "Hel!lo";
 
@@ -31,12 +27,9 @@ describe("integration", () => {
   });
 
   test("single delete", () => {
-    const logger = new StringifyLogger();
-    logger.silent();
-
-    const serverDoc = new ServerDocument("Hello", logger);
-    const sorayaDoc = serverDoc.forkClient(logger);
-    const zhenDoc = serverDoc.forkClient(logger);
+    const serverDoc = new ServerDocument("Hello");
+    const sorayaDoc = serverDoc.forkClient("soraya");
+    const zhenDoc = serverDoc.forkClient("zhen");
 
     const targetString = "Hell";
 
@@ -58,51 +51,35 @@ describe("integration", () => {
   });
 
   test("sequential inserts", () => {
-    const logger = new StringifyLogger();
-    logger.silent();
-
-    const serverDoc = new ServerDocument("Hello", logger);
-    const sorayaDoc = serverDoc.forkClient(logger);
-    const zhenDoc = serverDoc.forkClient(logger);
+    const serverDoc = new ServerDocument("Hello");
+    const sorayaDoc = serverDoc.forkClient("soraya");
+    const zhenDoc = serverDoc.forkClient("zhen");
 
     const targetString = "He!ll?o";
 
     // 1. Soraya inserts !
-    logger.log("soraya insert !");
     sorayaDoc.insert(2, "!");
     // 2. Soraya sends op to server
     // 3. Server merges soraya's op, producing a resulting transformed (or not) operation
-    logger.log("server merging soraya", { serverDoc, sorayaDoc });
     const sorayaOpTransformed = serverDoc.merge(sorayaDoc.waitingFor!);
-    logger.log("server merged soraya", { serverDoc, sorayaOpTransformed });
     // 4. Server sends an acknowledgement for soraya's op
     // 5. Soraya confirms the acknowledgement
-    logger.log("soraya confirming", { sorayaDoc });
     sorayaDoc.confirm();
-    logger.log("soraya confirmed", { sorayaDoc });
     // 6. Server sends soraya's op to zhen
     // 7. Zhen merges soraya's op
 
-    logger.log("zhen merging soraya", { zhenDoc, sorayaOpTransformed });
     zhenDoc.merge(sorayaOpTransformed);
-    logger.log("zhen merged soraya", { zhenDoc });
 
     // 8. Zhen inserts !
-    logger.log("zhen insert ?");
     zhenDoc.insert(5, "?"); // 5 because zhen sees He!llo and wants He!ll?o
     // 9. Zhen sends op to server
     // 10. Server merges zhen's op, producing a resulting transformed (or not) operation
-    logger.log("server merging zhen", { serverDoc, zhenDoc });
     const zhenOpTransformed = serverDoc.merge(zhenDoc.waitingFor!);
-    logger.log("server merged zhen", { serverDoc, zhenOpTransformed });
     // 11. Server sends an acknowledgement for zhens's op
     // 12. Zhen confirms the acknowledgement
-    logger.log("zhen confirming", { zhenDoc });
     zhenDoc.confirm();
-    logger.log("zhen confirmed", { zhenDoc });
     // 13. Server sends zhen's op to soraya
     // 14. Soraya merges zhen's op
-    logger.log("soraya merging zhen");
     sorayaDoc.merge(zhenOpTransformed);
 
     expect(serverDoc.snapshot).toBe(targetString);
@@ -111,12 +88,9 @@ describe("integration", () => {
   });
 
   test("multiple sequential inserts", () => {
-    const logger = new StringifyLogger();
-    logger.silent();
-
-    const serverDoc = new ServerDocument("Hello", logger);
-    const zhenDoc = serverDoc.forkClient(logger);
-    const sorayaDoc = serverDoc.forkClient(logger);
+    const serverDoc = new ServerDocument("Hello");
+    const zhenDoc = serverDoc.forkClient("zhen");
+    const sorayaDoc = serverDoc.forkClient("soraya");
 
     const targetString = "He!l&%l?o";
 
@@ -174,12 +148,9 @@ describe("integration", () => {
   });
 
   test("sequential deletes", () => {
-    const logger = new StringifyLogger();
-    logger.silent();
-
-    const serverDoc = new ServerDocument("Hello", logger);
-    const sorayaDoc = serverDoc.forkClient(logger);
-    const zhenDoc = serverDoc.forkClient(logger);
+    const serverDoc = new ServerDocument("Hello");
+    const sorayaDoc = serverDoc.forkClient("soraya");
+    const zhenDoc = serverDoc.forkClient("zhen");
 
     const targetString = "Hll";
 
@@ -213,12 +184,9 @@ describe("integration", () => {
   });
 
   test("concurrent inserts", () => {
-    const logger = new StringifyLogger();
-    logger.silent();
-
-    const serverDoc = new ServerDocument("Hello", logger);
-    const sorayaDoc = serverDoc.forkClient(logger);
-    const zhenDoc = serverDoc.forkClient(logger);
+    const serverDoc = new ServerDocument("Hello");
+    const sorayaDoc = serverDoc.forkClient("soraya");
+    const zhenDoc = serverDoc.forkClient("zhen");
 
     const targetString = "He!ll?o";
 
@@ -255,12 +223,9 @@ describe("integration", () => {
   });
 
   test("multiple concurrent inserts", () => {
-    const logger = new StringifyLogger();
-    logger.silent();
-
-    const serverDoc = new ServerDocument("Hello", logger);
-    const sorayaDoc = serverDoc.forkClient(logger);
-    const zhenDoc = serverDoc.forkClient(logger);
+    const serverDoc = new ServerDocument("Hello");
+    const sorayaDoc = serverDoc.forkClient("soraya");
+    const zhenDoc = serverDoc.forkClient("zhen");
 
     const targetString = "He!@ll?$o";
 
@@ -280,93 +245,62 @@ describe("integration", () => {
     // 4. Zhen sends op to server
 
     // 5. "Server merges soraya's op, producing a resulting transformed (or not) operation
-    logger.log("server merging soraya op 1", { serverDoc, sorayaDoc });
     const sorayaOpTransformed = serverDoc.merge(sorayaDoc.waitingFor!);
-    logger.log("server merged soraya op 1", { serverDoc, sorayaOpTransformed });
 
     expect(serverDoc.snapshot).toBe("He@llo");
 
     // 6. "Server merges zhen's op, producing a resulting transformed (or not) operation
-    logger.log("server merging zhen op 1", { serverDoc, zhenDoc });
     const zhenOpTransformed = serverDoc.merge(zhenDoc.waitingFor!);
-    logger.log("server merged zhen op 1", { serverDoc, zhenOpTransformed });
 
     expect(serverDoc.snapshot).toBe("He@ll$o");
 
     // 7. Server sends an acknowledgement for soraya's op
     // 8. Soraya confirms the acknowledgement
-    // logger.log("soraya confirming 1st", {
-    //   sorayaDoc,
-    // });
-    logger.log("soraya confirming 1st");
     sorayaDoc.confirm();
-    // logger.log("soraya confirmed 1st", {
-    //   sorayaDoc,
-    // });
 
     // 9. Soraya sends next op to server
-    logger.log("server merging soraya 2nd", { serverDoc, sorayaDoc });
     const sorayaOpTwoTransformed = serverDoc.merge(sorayaDoc.waitingFor!); // He!!ll?o
-    logger.log("server merged soraya 2nd", {
-      serverDoc,
-      sorayaOpTwoTransformed,
-    });
 
     expect(serverDoc.snapshot).toBe("He!@ll$o");
 
     // 13. Server sends zhen's op to soraya
     // 14. Soraya merges zhen's op
-    logger.log("soraya merging zhen 1st", { sorayaDoc, zhenOpTransformed });
     sorayaDoc.merge(zhenOpTransformed); // He!!ll?o
-    logger.log("soraya merged zhen 1st", { sorayaDoc });
 
     expect(sorayaDoc.snapshot).toBe("He!@ll$o");
 
     // 10. Server sends an acknowledgement for soraya's 2nd op
     // 11. Soraya confirms the acknowledgement
-    logger.log("soraya confirming 2nd");
     sorayaDoc.confirm();
-    // logger.log("soraya confirmed 2nd", { sorayaDoc });
 
     // 16. Server sends soraya's op to zhen
     // 10. Zhen merges soraya's op
-    logger.log("zhen merging soraya 1st", { zhenDoc, sorayaOpTransformed });
     zhenDoc.merge(sorayaOpTransformed); // He!ll??o
-    logger.log("zhen merged soraya 1st", { zhenDoc });
 
     expect(zhenDoc.snapshot).toBe("He@ll?$o");
 
     // 11. Server sends an acknowledgement for zhen's op
     // 12. Zhen confirms the acknowledgement
-    logger.log("zhen confirming 1st", { zhenDoc });
     zhenDoc.confirm();
-    logger.log("zhen confirmed 1st");
 
     // 13. Zhen sends next op to server
-    logger.log("server merging zhen 2nd", { serverDoc, zhenDoc });
     const zhenOpTwoTransformed = serverDoc.merge(zhenDoc.waitingFor!);
-    logger.log("server merged zhen 2nd", { serverDoc, zhenOpTwoTransformed });
 
     expect(serverDoc.snapshot).toBe("He!@ll?$o");
 
     // 16. Server sends soraya's op to zhen
     // 10. Zhen merges soraya's op
-    logger.log("zhen merging soraya 2nd", { zhenDoc, sorayaOpTwoTransformed });
     zhenDoc.merge(sorayaOpTwoTransformed);
-    logger.log("zhen merged soraya 2nd", { zhenDoc });
 
     expect(zhenDoc.snapshot).toBe(targetString);
 
     // 14. Server sends an acknowledgement for zhen's 2nd op
     // 15. Zhen confirms the acknowledgement
     zhenDoc.confirm();
-    logger.log("zhen confirmed 2nd");
 
     // 13. Server sends zhen's op to soraya
     // 14. Soraya merges zhen's op
-    logger.log("soraya merging zhen 2nd", { sorayaDoc, zhenOpTwoTransformed });
     sorayaDoc.merge(zhenOpTwoTransformed);
-    logger.log("soraya merged zhen 2nd", { sorayaDoc });
 
     expect(serverDoc.snapshot).toBe(targetString);
     expect(sorayaDoc.snapshot).toBe(serverDoc.snapshot);
@@ -374,12 +308,9 @@ describe("integration", () => {
   });
 
   test("multiple concurrent inserts inverse", () => {
-    const logger = new StringifyLogger();
-    logger.silent();
-
-    const serverDoc = new ServerDocument("Hello", logger);
-    const sorayaDoc = serverDoc.forkClient(logger);
-    const zhenDoc = serverDoc.forkClient(logger);
+    const serverDoc = new ServerDocument("Hello");
+    const sorayaDoc = serverDoc.forkClient("soraya");
+    const zhenDoc = serverDoc.forkClient("zhen");
 
     const targetString = "He?$ll!@o";
 
@@ -399,93 +330,62 @@ describe("integration", () => {
     // 4. Zhen sends op to server
 
     // 5. "Server merges soraya's op, producing a resulting transformed (or not) operation
-    logger.log("server merging soraya op 1", { serverDoc, sorayaDoc });
     const sorayaOpTransformed = serverDoc.merge(sorayaDoc.waitingFor!);
-    logger.log("server merged soraya op 1", { serverDoc, sorayaOpTransformed });
 
     expect(serverDoc.snapshot).toBe("Hell@o");
 
     // 6. "Server merges zhen's op, producing a resulting transformed (or not) operation
-    logger.log("server merging zhen op 1", { serverDoc, zhenDoc });
     const zhenOpTransformed = serverDoc.merge(zhenDoc.waitingFor!);
-    logger.log("server merged zhen op 1", { serverDoc, zhenOpTransformed });
 
     expect(serverDoc.snapshot).toBe("He$ll@o");
 
     // 7. Server sends an acknowledgement for soraya's op
     // 8. Soraya confirms the acknowledgement
-    // logger.log("soraya confirming 1st", {
-    //   sorayaDoc,
-    // });
-    logger.log("soraya confirming 1st");
     sorayaDoc.confirm();
-    // logger.log("soraya confirmed 1st", {
-    //   sorayaDoc,
-    // });
 
     // 9. Soraya sends next op to server
-    logger.log("server merging soraya 2nd", { serverDoc, sorayaDoc });
     const sorayaOpTwoTransformed = serverDoc.merge(sorayaDoc.waitingFor!); // He!!ll?o
-    logger.log("server merged soraya 2nd", {
-      serverDoc,
-      sorayaOpTwoTransformed,
-    });
 
     expect(serverDoc.snapshot).toBe("He$ll!@o");
 
     // 13. Server sends zhen's op to soraya
     // 14. Soraya merges zhen's op
-    logger.log("soraya merging zhen 1st", { sorayaDoc, zhenOpTransformed });
     sorayaDoc.merge(zhenOpTransformed); // He!!ll?o
-    logger.log("soraya merged zhen 1st", { sorayaDoc });
 
     expect(sorayaDoc.snapshot).toBe("He$ll!@o");
 
     // 10. Server sends an acknowledgement for soraya's 2nd op
     // 11. Soraya confirms the acknowledgement
-    logger.log("soraya confirming 2nd");
     sorayaDoc.confirm();
-    // logger.log("soraya confirmed 2nd", { sorayaDoc });
 
     // 16. Server sends soraya's op to zhen
     // 10. Zhen merges soraya's op
-    logger.log("zhen merging soraya 1st", { zhenDoc, sorayaOpTransformed });
     zhenDoc.merge(sorayaOpTransformed); // He!ll??o
-    logger.log("zhen merged soraya 1st", { zhenDoc });
 
     expect(zhenDoc.snapshot).toBe("He?$ll@o");
 
     // 11. Server sends an acknowledgement for zhen's op
     // 12. Zhen confirms the acknowledgement
-    logger.log("zhen confirming 1st", { zhenDoc });
     zhenDoc.confirm();
-    logger.log("zhen confirmed 1st");
 
     // 13. Zhen sends next op to server
-    logger.log("server merging zhen 2nd", { serverDoc, zhenDoc });
     const zhenOpTwoTransformed = serverDoc.merge(zhenDoc.waitingFor!);
-    logger.log("server merged zhen 2nd", { serverDoc, zhenOpTwoTransformed });
 
     expect(serverDoc.snapshot).toBe("He?$ll!@o");
 
     // 16. Server sends soraya's op to zhen
     // 10. Zhen merges soraya's op
-    logger.log("zhen merging soraya 2nd", { zhenDoc, sorayaOpTwoTransformed });
     zhenDoc.merge(sorayaOpTwoTransformed);
-    logger.log("zhen merged soraya 2nd", { zhenDoc });
 
     expect(zhenDoc.snapshot).toBe(targetString);
 
     // 14. Server sends an acknowledgement for zhen's 2nd op
     // 15. Zhen confirms the acknowledgement
     zhenDoc.confirm();
-    logger.log("zhen confirmed 2nd");
 
     // 13. Server sends zhen's op to soraya
     // 14. Soraya merges zhen's op
-    logger.log("soraya merging zhen 2nd", { sorayaDoc, zhenOpTwoTransformed });
     sorayaDoc.merge(zhenOpTwoTransformed);
-    logger.log("soraya merged zhen 2nd", { sorayaDoc });
 
     expect(serverDoc.snapshot).toBe(targetString);
     expect(sorayaDoc.snapshot).toBe(serverDoc.snapshot);

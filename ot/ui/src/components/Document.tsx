@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useClickaway } from "../hooks/useClickaway";
 import { useDocumentSocket } from "../hooks/useDocumentSocket";
+import { Selection } from "@lbennett/collab-text-ot-core";
 
 const browserDocument = document;
 
@@ -10,8 +11,15 @@ export function Document() {
 
   const [hasFocus, setHasFocus] = useState(false);
 
-  const { insert, deleteOp, cursor, content } = useDocumentSocket();
-  const { cursorPosition, setCursorPosition } = cursor;
+  const {
+    document,
+    insert,
+    select,
+    deleteOp,
+    cursorPosition,
+    cursorPositions,
+    content,
+  } = useDocumentSocket();
 
   const initialCanvasWidth = 800;
 
@@ -50,13 +58,17 @@ export function Document() {
 
   const render = useCallback(() => {
     if (canvasRef.current === null) {
+      throw new Error("Canvas is not defined");
+    }
+
+    if (!document) {
       return;
     }
 
     const context = canvasRef.current.getContext("2d");
 
     if (!context) {
-      return;
+      throw new Error("Context is not defined");
     }
 
     const cssWidth = canvasRef.current.clientWidth;
@@ -80,8 +92,8 @@ export function Document() {
       );
     }
 
-    if (hasFocus && cursorPosition !== null) {
-      const xTotal = cursorPosition;
+    const renderCursor = (start: number, color: string) => {
+      const xTotal = start;
       let lineIndex = 0;
 
       let totalCharacters = 0;
@@ -103,12 +115,28 @@ export function Document() {
       context.lineWidth = 2;
       context.moveTo(cursorX, cursorY);
       context.lineTo(cursorX, cursorY + textSize);
-      context.strokeStyle = "red";
+      context.strokeStyle = color;
       context.stroke();
       context.closePath();
+    };
+
+    if (hasFocus && cursorPosition !== null) {
+      renderCursor(cursorPosition.start, cursorPosition.color);
+    }
+
+    const positions = cursorPositions
+      ? (Object.entries(cursorPositions).filter(
+          ([clientId, selection]) => selection && clientId !== document?.id,
+        ) as Array<[string, Selection]>)
+      : [];
+
+    for (const [, position] of positions) {
+      renderCursor(position.start, position.color);
     }
   }, [
+    document,
     cursorPosition,
+    cursorPositions,
     hasFocus,
     fillLines,
     lineHeight,
@@ -118,6 +146,10 @@ export function Document() {
   ]);
 
   useEffect(() => {
+    if (!document) {
+      return;
+    }
+
     render();
 
     const canvas = canvasRef.current;
@@ -127,7 +159,7 @@ export function Document() {
         ?.getContext("2d")
         ?.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
     };
-  }, [render]);
+  }, [render, document]);
 
   const handleKeyboard = useCallback(
     (event: KeyboardEvent) => {
@@ -220,7 +252,7 @@ export function Document() {
       cursorPosition = content.length;
     }
 
-    setCursorPosition(cursorPosition);
+    select(cursorPosition, cursorPosition);
   };
 
   return (

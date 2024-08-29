@@ -1,83 +1,20 @@
-import { InsertOperation } from "../operations/InsertOperation";
 import { StringOperation } from "../operations/StringOperation";
-import { Logger } from "../logger/Logger";
-import { DeleteOperation } from "../lib";
+import { stringSelectTransform } from "./string-select";
+import { stringEditTransform } from "./string-edit";
 
 export function stringTransform(
-  existing: StringOperation,
+  concurrent: StringOperation,
   transforming: StringOperation,
-  logger: Logger,
 ) {
-  console.log({ existing, transforming });
-  if (
-    existing instanceof InsertOperation &&
-    transforming instanceof InsertOperation
-  ) {
-    if (existing.position <= transforming.position) {
-      const t = transforming.clone();
-      t.moveRight();
-
-      return { transforming: t, existing };
-    } else {
-      const e = existing.clone();
-
-      e.moveRight();
-
-      return { transforming, existing: e };
-    }
-  } else if (
-    existing instanceof DeleteOperation &&
-    transforming instanceof DeleteOperation
-  ) {
-    logger.log("\ntransforming delete-delete");
-
-    if (existing.position <= transforming.position) {
-      const t = transforming.clone();
-      logger.log("moving left to account for removed text");
-      t.moveLeft();
-
-      return { transforming: t, existing };
-    } else {
-      const e = transforming.clone();
-      logger.log("moving right to account for removed text");
-      e.moveRight();
-
-      return { transforming, existing: e };
-    }
+  const select = stringSelectTransform(concurrent, transforming);
+  if (select !== null) {
+    return select;
   }
 
-  return { transforming, existing };
+  const edit = stringEditTransform(concurrent, transforming);
+  if (edit !== null) {
+    return edit;
+  }
 
-  //
-  // if (
-  //   existing instanceof InsertOperation &&
-  //   transforming instanceof DeleteOperation
-  // ) {
-  //   logger.log("\ntransforming delete-delete");
-  //
-  //   if (existing.position <= transforming.position) {
-  //     logger.log("moving left to account for removed text");
-  //     transforming.moveLeft();
-  //
-  //     return { transforming, existing };
-  //   } else {
-  //     logger.log("no change");
-  //   }
-  // }
-  //
-  // if (
-  //   existing instanceof DeleteOperation &&
-  //   transforming instanceof InsertOperation
-  // ) {
-  //   logger.log("\ntransforming insert-delete");
-  //   if (existing.position < transforming.position) {
-  //     logger.log("moving left to account for removed text");
-  //     transforming.moveLeft();
-  //
-  //     return { transforming, existing };
-  //   } else {
-  //     logger.log("no change");
-  //   }
-  // }
-  //
+  return { transforming, concurrent };
 }

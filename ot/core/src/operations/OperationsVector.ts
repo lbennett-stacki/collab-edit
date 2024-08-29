@@ -4,6 +4,10 @@ import { InsertOperation } from "./InsertOperation";
 import { Operation } from "./Operation";
 
 export class OperationsVector extends Array<Operation> implements ToString {
+  clear() {
+    this.length = 0;
+  }
+
   slice(start?: number, end?: number): OperationsVector {
     const slice = super.slice(start, end);
 

@@ -3,3 +3,4 @@ export * from "./StringOperation";
 export * from "./DeleteOperation";
 export * from "./InsertOperation";
 export * from "./PendingOperation";
+export * from "./SelectOperation";

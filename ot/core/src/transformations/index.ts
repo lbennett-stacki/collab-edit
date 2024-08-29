@@ -1,18 +1,15 @@
 import { Operation } from "../operations/Operation";
 import { StringOperation } from "../operations/StringOperation";
 import { stringTransform } from "./string";
-import { Logger } from "../logger/Logger";
 
-export function transform(
-  existing: Operation,
-  transforming: Operation,
-  logger: Logger,
-) {
+export function transform(concurrent: Operation, transforming: Operation) {
   if (
-    existing instanceof StringOperation &&
+    concurrent instanceof StringOperation &&
     transforming instanceof StringOperation
   ) {
-    return stringTransform(existing, transforming, logger);
+    const transformed = stringTransform(concurrent, transforming);
+
+    return transformed;
   }
 
   throw new Error("unsupported operation types");

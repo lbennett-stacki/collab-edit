@@ -1,27 +1,28 @@
-import { Logger } from "../logger/Logger";
-import { Operation } from "../operations/Operation";
+import { ClientSelections } from "../cursor/Selection";
+import { AnyOperation, Operation } from "../operations/Operation";
+import { SelectOperation } from "../operations/SelectOperation";
 import { transform } from "../transformations";
 
 export abstract class Document {
-  constructor(protected content = "") {}
-
-  public abstract fork(): Document;
-  public abstract toString(): string;
+  constructor(
+    protected content = "",
+    public selections: ClientSelections = {},
+  ) {}
 
   get snapshot(): string {
     return this.content;
   }
 
-  protected operate(operation: Operation): void {
-    this.content = operation.operate(this.content);
+  protected operate(operation: AnyOperation): void {
+    if (operation instanceof SelectOperation) {
+      this.selections[operation.clientId] = operation.operate();
+    } else {
+      this.content = operation.operate(this.content);
+    }
   }
 
-  protected transform(
-    existing: Operation,
-    transforming: Operation,
-    logger: Logger,
-  ) {
-    const transformed = transform(existing, transforming, logger);
+  protected transform(concurrent: Operation, transforming: Operation) {
+    const transformed = transform(concurrent, transforming);
 
     return transformed;
   }

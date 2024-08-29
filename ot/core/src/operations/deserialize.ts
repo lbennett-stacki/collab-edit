@@ -1,10 +1,12 @@
 import { DeleteOperation } from "./DeleteOperation";
 import { InsertOperation } from "./InsertOperation";
 import { isOperationType, Operation, OperationType } from "./Operation";
+import { SelectOperation } from "./SelectOperation";
 
 const operations = {
   [OperationType.InsertOperation]: InsertOperation,
   [OperationType.DeleteOperation]: DeleteOperation,
+  [OperationType.SelectOperation]: SelectOperation,
 } satisfies Record<OperationType, unknown>;
 
 export function deserializeOperation(data: string | object): Operation {

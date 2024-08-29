@@ -1,20 +1,49 @@
-import { ClientDocument, Operation } from "@lbennett/collab-text-ot-core";
+import {
+  ClientDocument,
+  ClientSelections,
+  Operation,
+  PendingOperation,
+} from "@lbennett/collab-text-ot-core";
 import { useCallback, useState } from "react";
-import { useCursor } from "./useCursor";
 
 export function useDocument() {
   const [document, setDocument] = useState<ClientDocument | null>(null);
+  const [content, setContent] = useState<string>("");
+  const [cursorPositions, setCursorPositions] =
+    useState<ClientSelections | null>(null);
+  const cursorPosition =
+    document === null ? null : (cursorPositions?.[document.id] ?? null);
 
-  const cursor = useCursor();
-  const { cursorPosition, increment, decrement } = cursor;
+  const [waitingFor, setWaitingFor] = useState<PendingOperation | null>(null);
+
+  const increment = useCallback(() => {
+    if (document === null) {
+      throw new Error("Document is not initialized");
+    }
+
+    document.moveRight();
+    setWaitingFor(document.waitingFor);
+    setCursorPositions({ ...document.selections });
+  }, [document]);
+
+  const decrement = useCallback(() => {
+    if (document === null) {
+      throw new Error("Document is not initialized");
+    }
+
+    document.moveLeft();
+    setWaitingFor(document.waitingFor);
+    setCursorPositions({ ...document.selections });
+  }, [document]);
 
   const create = useCallback(
-    (revision: number, content: string) => {
+    (clientId: string, color: string, revision: number, content: string) => {
       if (document !== null) {
         return;
       }
 
-      setDocument(new ClientDocument(revision, content));
+      setDocument(new ClientDocument(clientId, color, revision, content));
+      setContent(content);
     },
     [document],
   );
@@ -25,28 +54,24 @@ export function useDocument() {
         throw new Error("Document is not initialized");
       }
 
-      if (cursorPosition === null) {
-        throw new Error("Cursor position is not initialized");
-      }
-
-      document.insert(cursorPosition, value);
-      increment();
+      document.insert(value);
+      setWaitingFor(document.waitingFor);
+      setContent(document.snapshot);
+      setCursorPositions({ ...document.selections });
     },
-    [document, increment, cursorPosition],
+    [document],
   );
 
-  const docDelete = useCallback(() => {
+  const deleteOp = useCallback(() => {
     if (document === null) {
       throw new Error("Document is not initialized");
     }
 
-    if (cursorPosition === null) {
-      throw new Error("Cursor position is not initialized");
-    }
-
-    document.delete(cursorPosition - 1);
+    document.delete();
+    setWaitingFor(document.waitingFor);
     decrement();
-  }, [document, decrement, cursorPosition]);
+    setContent(document.snapshot);
+  }, [document, decrement]);
 
   const merge = useCallback(
     (operation: Operation) => {
@@ -55,7 +80,9 @@ export function useDocument() {
       }
 
       document.merge(operation);
-      setDocument(document.fork());
+      setWaitingFor(document.waitingFor);
+      setContent(document.snapshot);
+      setCursorPositions({ ...document.selections });
     },
     [document],
   );
@@ -65,18 +92,35 @@ export function useDocument() {
       throw new Error("Document is not initialized");
     }
     document.confirm();
+    setWaitingFor(document.waitingFor);
   }, [document]);
 
-  const content = document?.snapshot ?? "";
+  const select = useCallback(
+    (start: number, end: number) => {
+      if (document === null) {
+        throw new Error("Document is not initialized");
+      }
+
+      document.select(start, end);
+      setWaitingFor(document.waitingFor);
+      setCursorPositions({ ...document.selections });
+    },
+    [document],
+  );
 
   return {
     document,
     content,
     insert,
-    docDelete,
+    deleteOp,
     merge,
     create,
-    cursor,
+    cursorPositions,
+    cursorPosition,
+    increment,
+    decrement,
+    select,
     confirm,
+    waitingFor,
   };
 }

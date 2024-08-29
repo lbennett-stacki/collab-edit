@@ -1,24 +1,31 @@
 import { Document } from "../document/Document";
 import { ClientDocument } from "../client/ClientDocument";
-import { Logger } from "../logger/Logger";
 import { PendingOperation } from "../operations/PendingOperation";
 import { OperationsVector } from "../operations/OperationsVector";
+import { ToString } from "../types/ToString";
+import { AnyOperation } from "../operations/Operation";
+import { ClientSelections } from "../cursor/Selection";
+import { SelectOperation } from "../operations/SelectOperation";
 
-export class ServerDocument extends Document {
+export class ServerDocument extends Document implements ToString {
   constructor(
-    content = "",
-    private readonly logger = new Logger(),
+    content?: string,
+    selections?: ClientSelections,
     public readonly operationHistory = new OperationsVector(),
   ) {
-    super(content);
+    super(content, selections);
   }
 
-  fork(logger?: Logger): ServerDocument {
-    return new ServerDocument(this.content, logger);
+  clearHistory(): void {
+    this.operationHistory.clear();
   }
 
-  forkClient(logger?: Logger): ClientDocument {
-    return new ClientDocument(this.revision, this.content, logger);
+  fork(): ServerDocument {
+    return new ServerDocument(this.content);
+  }
+
+  forkClient(clientId: string, color: string): ClientDocument {
+    return new ClientDocument(clientId, color, this.revision, this.content);
   }
 
   merge(operation: PendingOperation) {
@@ -39,17 +46,12 @@ Current version is ${this.revision}, operation version is ${operation.revision}
 
     const concurrent = this.operationHistory.slice(operation.revision);
 
-    this.logger.log("got concurrent slice for server transforms", {
-      concurrent,
-      history: this.operationHistory,
-    });
-
-    for (const existing of concurrent) {
-      const result = this.transform(existing, transformed, this.logger);
+    for (const op of concurrent) {
+      const result = this.transform(op, transformed);
       transformed = result.transforming;
     }
 
-    this.operate(transformed);
+    this.operate(transformed as AnyOperation);
     this.operationHistory.push(transformed);
 
     return transformed;

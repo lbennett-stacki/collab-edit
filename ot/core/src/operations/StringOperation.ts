@@ -1,21 +1,21 @@
-import { Operation } from "./Operation";
+import { Operation, OperationType } from "./Operation";
 
 export abstract class StringOperation extends Operation {
   constructor(
-    public readonly type: "insert" | "delete",
+    public readonly type: OperationType,
     public position: number,
   ) {
     super(type);
   }
 
-  abstract operate(content: string): string;
-
-  moveRight(): void {
+  moveRight(): this {
     this.position++;
+    return this;
   }
 
-  moveLeft(): void {
+  moveLeft(): this {
     this.position--;
+    return this;
   }
 
   static splice(

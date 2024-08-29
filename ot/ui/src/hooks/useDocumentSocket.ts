@@ -8,39 +8,54 @@ import {
   MessageType,
   SnapshotMessage,
   DeleteOperation,
+  SelectOperation,
+  SelectOperationMessage,
 } from "@lbennett/collab-text-ot-core";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useDocument } from "./useDocument";
 import { useWebSocket } from "./useWebSocket";
 
 export function useDocumentSocket() {
   const {
     create: docCreate,
-    cursor,
     document,
-    confirm: docConfirm,
+    confirm,
     content,
-    insert: docInsert,
-    docDelete,
-    merge: docMerge,
+    insert,
+    deleteOp,
+    merge,
+    select,
+    increment,
+    decrement,
+    cursorPosition,
+    cursorPositions,
+    waitingFor,
   } = useDocument();
 
   const handlers = useMemo(() => {
     return {
       [MessageType.Snapshot]: (message: SnapshotMessage) => {
-        docCreate(message.revision, message.snapshot);
+        docCreate(
+          message.clientId,
+          message.color,
+          message.revision,
+          message.snapshot,
+        );
       },
       [MessageType.Acknowledge]: (_message: AcknowledgeMessage) => {
-        docConfirm();
+        confirm();
       },
       [MessageType.InsertOperation]: (message: InsertOperationMessage) => {
-        docMerge(message.operation.operation);
+        merge(message.operation.operation);
       },
       [MessageType.DeleteOperation]: (message: DeleteOperationMessage) => {
-        docMerge(message.operation.operation);
+        merge(message.operation.operation);
+      },
+      [MessageType.SelectOperation]: (message: SelectOperationMessage) => {
+        merge(message.operation.operation);
       },
     };
-  }, [docCreate, docConfirm, docMerge]);
+  }, [docCreate, confirm, merge]);
 
   const hasHandler = useCallback(
     (key: string): key is keyof typeof handlers => {
@@ -90,47 +105,37 @@ export function useDocumentSocket() {
       throw new Error("Document is not waiting for an operation");
     }
 
+    // TODO: refactor
     if (document.waitingFor.operation instanceof InsertOperation) {
       send(new InsertOperationMessage(document.waitingFor));
     } else if (document.waitingFor.operation instanceof DeleteOperation) {
       send(new DeleteOperationMessage(document.waitingFor));
+    } else if (document.waitingFor.operation instanceof SelectOperation) {
+      send(new SelectOperationMessage(document.waitingFor));
     } else {
       throw new Error("Unknown operation type");
     }
   }, [document, send]);
 
-  const insert = useCallback(
-    (value: string) => {
-      if (document === null) {
-        throw new Error("Document is not initialized");
-      }
-
-      docInsert(value);
-
-      if (!document.waitingFor) {
-        throw new Error(
-          "document pending operation did not get set as expected",
-        );
-      }
-
-      sendNext();
-    },
-    [document, docInsert, sendNext],
-  );
-
-  const deleteOp = useCallback(() => {
-    if (document === null) {
-      throw new Error("Document is not initialized");
-    }
-
-    docDelete();
-
-    if (!document.waitingFor) {
-      throw new Error("document pending operation did not get set as expected");
+  useEffect(() => {
+    if (waitingFor === null) {
+      return;
     }
 
     sendNext();
-  }, [docDelete, document, sendNext]);
+  }, [waitingFor, sendNext]);
 
-  return { document, socket, deleteOp, send, insert, cursor, content };
+  return {
+    document,
+    socket,
+    send,
+    insert,
+    deleteOp,
+    select,
+    content,
+    cursorPosition,
+    cursorPositions,
+    increment,
+    decrement,
+  };
 }
