@@ -5,7 +5,6 @@ import { OperationsVector } from "../operations/OperationsVector";
 import { ToString } from "../types/ToString";
 import { AnyOperation } from "../operations/Operation";
 import { ClientSelections } from "../cursor/Selection";
-import { SelectOperation } from "../operations/SelectOperation";
 
 export class ServerDocument extends Document implements ToString {
   constructor(
@@ -64,8 +63,8 @@ Current version is ${this.revision}, operation version is ${operation.revision}
   toString(): string {
     return `
 ${this.revision}#ServerDocument(${this.content})
-  History:
-    ${this.operationHistory.toString()}
+History:
+${this.operationHistory.toString()}
     `.trim();
   }
 }

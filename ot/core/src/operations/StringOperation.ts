@@ -8,13 +8,15 @@ export abstract class StringOperation extends Operation {
     super(type);
   }
 
-  moveRight(): this {
-    this.position++;
+  moveRight(steps = 1): this {
+    this.position += steps;
+
     return this;
   }
 
-  moveLeft(): this {
-    this.position--;
+  moveLeft(steps = 1): this {
+    this.position += steps;
+
     return this;
   }
 
@@ -22,7 +24,7 @@ export abstract class StringOperation extends Operation {
     content: string,
     start: number,
     end: number,
-    insertion = "",
+    insertion: string,
   ): string {
     const before = content.slice(0, start);
     const after = content.slice(start + end);

@@ -15,7 +15,7 @@ import {
 
 const document = new ServerDocument(
   `
-Hello world! 
+Hello world!
 This is a collaborative text document.
 Operations (insert, delete, select) are sent to the server via websockets.
 The server transforms concurrent operations to handle conflicts, preserving user intention.
@@ -24,24 +24,27 @@ Client sockets apply the transformation against their local concurrent operation
   `.trim(),
 );
 
-const clientColors = new Map<string, string>();
+type Color = [red: number, green: number, blue: number];
 
-const colors = [
-  "red",
-  "blue",
-  "green",
-  "purple",
-  "orange",
-  "yellow",
-  "pink",
-  "brown",
-];
+const clientColors = new Map<string, Color>();
+
+export const colors: Record<string, Color> = {
+  red: [255, 0, 0],
+  blue: [0, 0, 255],
+  green: [0, 255, 0],
+  purple: [128, 0, 128],
+  orange: [255, 165, 0],
+  yellow: [255, 255, 0],
+  pink: [255, 192, 203],
+  brown: [165, 42, 42],
+};
+const colorValues = Object.values(colors);
 
 const roundRobinNextColor = () => {
   const clientCount = clientColors.size;
-  const colorIndex = clientCount % colors.length;
+  const colorIndex = clientCount % colorValues.length;
 
-  return colors[colorIndex];
+  return colorValues[colorIndex];
 };
 
 (function main() {
@@ -56,6 +59,7 @@ const roundRobinNextColor = () => {
     };
 
     const sendSnapshot = () => {
+      // TODO: send client cursors
       const color = clientColors.get(clientId);
       if (!color) {
         throw new Error(`No color for client ${clientId}`);
@@ -63,7 +67,7 @@ const roundRobinNextColor = () => {
 
       const snapshot = new SnapshotMessage(
         clientId,
-        color,
+        `rgb(${color.join(", ")})`,
         document.revision,
         document.snapshot,
       );

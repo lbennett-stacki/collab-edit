@@ -9,7 +9,7 @@
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
     "start": "node dist/main.js",
     "start:debug": "node --inspect-brk dist/main.js",
-    "dev": "tsx watch src/main.ts",
+    "dev": "tsx watch --include \"node_modules/@lbennett/collab-text-ot-core/**/*\" src/main.ts",
     "dev:debug": "tsx watch --inspect-brk src/main.ts",
     "build": "tsc"
   },

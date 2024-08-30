@@ -50,7 +50,13 @@ export class ClientDocument extends Document {
       throw new Error("No selection");
     }
 
-    const operation = new InsertOperation(this.selection.start, value);
+    let start = this.selection.first;
+
+    if (this.selection.start !== this.selection.end) {
+      start += 1;
+    }
+
+    const operation = new InsertOperation(start, value);
 
     this.mergeLocal(operation);
 
@@ -62,14 +68,18 @@ export class ClientDocument extends Document {
       throw new Error("No selection");
     }
 
-    const operation = new DeleteOperation(this.selection.start);
+    const start = this.selection.first - 1;
+    const end = this.selection.last - 1;
+    const length = end - start;
+
+    const operation = new DeleteOperation(start, length);
 
     this.mergeLocal(operation);
 
     return operation;
   }
 
-  select(start: number, end: number): SelectOperation {
+  select(start: number, end = start): SelectOperation {
     const operation = new SelectOperation(start, end, this.id, this.color);
 
     this.mergeLocal(operation);
@@ -77,28 +87,42 @@ export class ClientDocument extends Document {
     return operation;
   }
 
-  moveLeft(): SelectOperation {
+  moveLeft(steps = 1): SelectOperation {
     if (!this.selection) {
       throw new Error("No selection");
     }
 
     const operation = this.select(
-      Math.max(this.selection.start - 1, 0),
-      Math.max(this.selection.end - 1, 0),
+      Math.max(this.selection.start - steps, 0),
+      Math.max(this.selection.end - steps, 0),
     );
 
     return operation;
   }
 
-  moveRight(): SelectOperation {
+  moveRight(steps = 1): SelectOperation {
     if (!this.selection) {
       throw new Error("No selection");
     }
 
     const operation = this.select(
-      this.selection.start + 1,
-      this.selection.end + 1,
+      this.selection.start + steps,
+      this.selection.end + steps,
     );
+
+    return operation;
+  }
+
+  collapseSelection(): SelectOperation {
+    if (!this.selection) {
+      throw new Error("No selection");
+    }
+
+    const isStart = this.selection.last === this.selection.start;
+
+    const position = isStart ? this.selection.start : this.selection.end;
+
+    const operation = this.select(position, position);
 
     return operation;
   }
@@ -144,44 +168,12 @@ export class ClientDocument extends Document {
 
     this.revision += 1;
 
-    for (const clientId in this.selections) {
-      const selection = this.selections[clientId];
-      const selectionAsOperation = new SelectOperation(
-        selection.start,
-        selection.end,
-        selection.clientId,
-        selection.color,
-      );
-
-      const result = this.transform(transformed, selectionAsOperation);
-
-      if (result.transforming instanceof SelectOperation) {
-        this.selections[clientId] = new Selection(
-          result.transforming.position,
-          result.transforming.end,
-          clientId,
-          selection.color,
-        );
-      }
-    }
+    this.updateClientCursors(operation);
 
     return transformed;
   }
 
-  private setPending(operation: Operation): void {
-    this.pending = new PendingOperation(operation, this.revision);
-    this.revision += 1;
-  }
-
-  private mergeLocal(operation: Operation): void {
-    if (!this.pending) {
-      this.setPending(operation);
-    } else {
-      this.queue.push(operation);
-    }
-
-    this.operate(operation as AnyOperation);
-
+  private updateClientCursors(operation: Operation): void {
     for (const clientId in this.selections) {
       const selection = this.selections[clientId];
 
@@ -205,16 +197,34 @@ export class ClientDocument extends Document {
     }
   }
 
+  private setPending(operation: Operation): void {
+    this.pending = new PendingOperation(operation, this.revision);
+    this.revision += 1;
+  }
+
+  private mergeLocal(operation: Operation): void {
+    if (!this.pending) {
+      this.setPending(operation);
+    } else {
+      this.queue.push(operation);
+    }
+
+    this.operate(operation as AnyOperation);
+
+    this.updateClientCursors(operation);
+  }
+
   get waitingFor(): PendingOperation | null {
     return this.pending;
   }
 
   toString(): string {
     return `
-${this.revision}#ClientDocument(${this.content})
-  Pending: ${this.pending}
-  Queue:
-    ${this.queue.toString()}
+${this.revision}#ClientDocument[${this.id}](${this.content})
+Pending:
+${this.pending}
+Queue:
+${this.queue.toString()}
     `.trim();
   }
 }

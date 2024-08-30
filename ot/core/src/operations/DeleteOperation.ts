@@ -3,12 +3,21 @@ import { OperationType } from "./Operation";
 import { StringOperation } from "./StringOperation";
 
 export class DeleteOperation extends StringOperation {
-  constructor(position: number) {
+  constructor(
+    position: number,
+    public length: number,
+  ) {
     super(OperationType.DeleteOperation, position);
+    this.length = length <= 0 ? 1 : length;
   }
 
   operate(content: string): string {
-    return StringOperation.splice(content, this.position, 1);
+    return StringOperation.splice(
+      content,
+      this.length > 1 ? this.position + 1 : this.position,
+      this.length,
+      "",
+    );
   }
 
   toString(): string {
@@ -18,7 +27,7 @@ delete(@ ${this.position})
   }
 
   clone(): DeleteOperation {
-    return new DeleteOperation(this.position);
+    return new DeleteOperation(this.position, this.length);
   }
 
   static deserialize(data: string | object): DeleteOperation {
@@ -26,7 +35,8 @@ delete(@ ${this.position})
 
     assert(pojo.type).is(OperationType.DeleteOperation);
     assert(pojo.position).isNumber();
+    assert(pojo.length).isNumber();
 
-    return new DeleteOperation(pojo.position);
+    return new DeleteOperation(pojo.position, pojo.length);
   }
 }

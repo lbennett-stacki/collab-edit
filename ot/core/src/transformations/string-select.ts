@@ -16,39 +16,54 @@ export function stringSelectTransform(
     concurrent instanceof SelectOperation &&
     transforming instanceof InsertOperation
   ) {
-    if (concurrent.position <= transforming.position) {
-      return { transforming, concurrent };
-    } else {
-      return { transforming, concurrent: concurrent.clone().moveRight() };
+    const c = concurrent.clone();
+    if (concurrent.start > transforming.position) {
+      c.moveStartRight(transforming.length);
     }
+    if (concurrent.end > transforming.position) {
+      c.moveEndRight(transforming.length);
+    }
+    return { transforming, concurrent: c };
   } else if (
     concurrent instanceof SelectOperation &&
     transforming instanceof DeleteOperation
   ) {
-    if (concurrent.position <= transforming.position) {
-      return { transforming, concurrent };
-    } else {
-      return { transforming, concurrent: concurrent.clone().moveLeft() };
+    const c = concurrent.clone();
+    if (concurrent.start > transforming.position) {
+      c.moveStartLeft(transforming.length);
     }
+    if (concurrent.end > transforming.position) {
+      c.moveEndLeft(transforming.length);
+    }
+    return { transforming, concurrent: c };
   } else if (
     concurrent instanceof InsertOperation &&
     transforming instanceof SelectOperation
   ) {
-    if (concurrent.position <= transforming.position) {
-      return { transforming: transforming.clone().moveRight(), concurrent };
-    } else {
-      return { transforming, concurrent };
+    const t = transforming.clone();
+    if (concurrent.position <= transforming.start) {
+      t.moveStartRight(concurrent.length);
     }
+    if (concurrent.position <= transforming.end) {
+      t.moveEndRight(concurrent.length);
+    }
+    return { transforming: t, concurrent };
   } else if (
     concurrent instanceof DeleteOperation &&
     transforming instanceof SelectOperation
   ) {
-    if (concurrent.position <= transforming.position) {
-      return { transforming: transforming.clone().moveLeft(), concurrent };
-    } else {
-      return { transforming, concurrent };
+    const t = transforming.clone();
+    // These are < instead of <= because of how select ranges work
+    if (concurrent.position < transforming.start) {
+      t.moveStartLeft(concurrent.length);
     }
+
+    if (concurrent.position < transforming.end) {
+      t.moveEndLeft(concurrent.length);
+    }
+
+    return { transforming: t, concurrent };
   }
 
-  return { transforming, concurrent };
+  return null;
 }

@@ -16,7 +16,7 @@ export function useDocument() {
 
   const [waitingFor, setWaitingFor] = useState<PendingOperation | null>(null);
 
-  const increment = useCallback(() => {
+  const moveRight = useCallback(() => {
     if (document === null) {
       throw new Error("Document is not initialized");
     }
@@ -26,7 +26,7 @@ export function useDocument() {
     setCursorPositions({ ...document.selections });
   }, [document]);
 
-  const decrement = useCallback(() => {
+  const moveLeft = useCallback(() => {
     if (document === null) {
       throw new Error("Document is not initialized");
     }
@@ -48,30 +48,51 @@ export function useDocument() {
     [document],
   );
 
-  const insert = useCallback(
-    (value: string) => {
-      if (document === null) {
-        throw new Error("Document is not initialized");
-      }
-
-      document.insert(value);
-      setWaitingFor(document.waitingFor);
-      setContent(document.snapshot);
-      setCursorPositions({ ...document.selections });
-    },
-    [document],
-  );
-
   const deleteOp = useCallback(() => {
     if (document === null) {
       throw new Error("Document is not initialized");
     }
 
+    if (cursorPosition === null) {
+      throw new Error("Cursor position is not initialized");
+    }
+
+    const wasRange = cursorPosition.isRange;
+
     document.delete();
+
+    if (wasRange) {
+      document.collapseSelection();
+    }
+
     setWaitingFor(document.waitingFor);
-    decrement();
     setContent(document.snapshot);
-  }, [document, decrement]);
+    setCursorPositions({ ...document.selections });
+  }, [document, cursorPosition]);
+
+  const insert = useCallback(
+    (value: string) => {
+      if (document === null) {
+        throw new Error("Document is not initialized");
+      }
+      if (cursorPosition === null) {
+        throw new Error("Cursor position is not initialized");
+      }
+
+      const isRange = cursorPosition.isRange;
+
+      if (isRange) {
+        deleteOp();
+      }
+
+      document.insert(value);
+
+      setWaitingFor(document.waitingFor);
+      setContent(document.snapshot);
+      setCursorPositions({ ...document.selections });
+    },
+    [document, cursorPosition, deleteOp],
+  );
 
   const merge = useCallback(
     (operation: Operation) => {
@@ -117,8 +138,8 @@ export function useDocument() {
     create,
     cursorPositions,
     cursorPosition,
-    increment,
-    decrement,
+    moveRight,
+    moveLeft,
     select,
     confirm,
     waitingFor,

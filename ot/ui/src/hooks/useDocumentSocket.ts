@@ -25,8 +25,8 @@ export function useDocumentSocket() {
     deleteOp,
     merge,
     select,
-    increment,
-    decrement,
+    moveRight,
+    moveLeft,
     cursorPosition,
     cursorPositions,
     waitingFor,
@@ -135,7 +135,7 @@ export function useDocumentSocket() {
     content,
     cursorPosition,
     cursorPositions,
-    increment,
-    decrement,
+    moveRight,
+    moveLeft,
   };
 }

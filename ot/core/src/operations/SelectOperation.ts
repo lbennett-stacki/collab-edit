@@ -13,19 +13,87 @@ export class SelectOperation extends StringOperation {
     super(OperationType.SelectOperation, position);
   }
 
+  get start() {
+    return this.position;
+  }
+
+  get first() {
+    return this.position <= this.end ? this.position : this.end;
+  }
+
+  set first(value: number) {
+    if (this.position <= this.end) {
+      this.position = value;
+    } else {
+      this.end = value;
+    }
+  }
+
+  get last() {
+    return this.position <= this.end ? this.end : this.position;
+  }
+
+  set last(value: number) {
+    if (this.position <= this.end) {
+      this.end = value;
+    } else {
+      this.position = value;
+    }
+  }
+
   operate(): Selection {
     return new Selection(this.position, this.end, this.clientId, this.color);
   }
 
-  moveLeft(): this {
-    this.position--;
-    this.end--;
+  moveLeft(steps = 1): this {
+    this.moveFirstRight(steps);
+    this.moveLastRight(steps);
     return this;
   }
 
-  moveRight(): this {
-    this.position++;
-    this.end++;
+  moveStartLeft(steps = 1): this {
+    this.position -= steps;
+    return this;
+  }
+
+  moveEndLeft(steps = 1): this {
+    this.end -= steps;
+    return this;
+  }
+
+  moveFirstLeft(steps = 1): this {
+    this.first -= steps;
+    return this;
+  }
+
+  moveLastLeft(steps = 1): this {
+    this.last -= steps;
+    return this;
+  }
+
+  moveRight(steps = 1): this {
+    this.moveFirstRight(steps);
+    this.moveLastRight(steps);
+    return this;
+  }
+
+  moveStartRight(steps = 1): this {
+    this.position += steps;
+    return this;
+  }
+
+  moveEndRight(steps = 1): this {
+    this.end += steps;
+    return this;
+  }
+
+  moveFirstRight(steps = 1): this {
+    this.first += steps;
+    return this;
+  }
+
+  moveLastRight(steps = 1): this {
+    this.last += steps;
     return this;
   }
 

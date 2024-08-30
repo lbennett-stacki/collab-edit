@@ -10,6 +10,10 @@ export class InsertOperation extends StringOperation {
     super(OperationType.InsertOperation, position);
   }
 
+  get length(): number {
+    return this.value.length;
+  }
+
   operate(content: string): string {
     return StringOperation.splice(content, this.position, 0, this.value);
   }
