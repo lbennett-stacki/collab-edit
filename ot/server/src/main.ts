@@ -12,6 +12,7 @@ import {
   ServerDocument,
   SnapshotMessage,
 } from "@lbennett/collab-text-ot-core/server";
+import { clientColors, roundRobinNextColor } from "./colors";
 
 const document = new ServerDocument(
   `
@@ -23,29 +24,6 @@ Transformed operations are broadcast to all other connected sockets.
 Client sockets apply the transformation against their local concurrent operations.
   `.trim(),
 );
-
-type Color = [red: number, green: number, blue: number];
-
-const clientColors = new Map<string, Color>();
-
-export const colors: Record<string, Color> = {
-  red: [255, 0, 0],
-  blue: [0, 0, 255],
-  green: [0, 255, 0],
-  purple: [128, 0, 128],
-  orange: [255, 165, 0],
-  yellow: [255, 255, 0],
-  pink: [255, 192, 203],
-  brown: [165, 42, 42],
-};
-const colorValues = Object.values(colors);
-
-const roundRobinNextColor = () => {
-  const clientCount = clientColors.size;
-  const colorIndex = clientCount % colorValues.length;
-
-  return colorValues[colorIndex];
-};
 
 (function main() {
   const server = new WebSocketServer({ port: 4000 });

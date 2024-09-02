@@ -24,7 +24,7 @@
     }
   },
   "scripts": {
-    "test": "vitest",
+    "test": "vitest run",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
     "build": "tsc",
     "dev": "tsc -w"
@@ -34,6 +34,5 @@
     "tsx": "^4.17.0",
     "typescript": "^5.5.4",
     "vitest": "^2.0.5"
-  },
-  "dependencies": {}
+  }
 }

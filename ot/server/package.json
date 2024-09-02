@@ -5,7 +5,7 @@
   "author": "Luke Bennett <lbennett@fastmail.com>",
   "license": "MIT",
   "scripts": {
-    "test": "vitest",
+    "test": "vitest run",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
     "start": "node dist/main.js",
     "start:debug": "node --inspect-brk dist/main.js",
@@ -14,7 +14,7 @@
     "build": "tsc"
   },
   "dependencies": {
-    "@lbennett/collab-text-ot-core": "file:../core",
+    "@lbennett/collab-text-ot-core": "workspace:*",
     "ws": "^8.18.0"
   },
   "devDependencies": {

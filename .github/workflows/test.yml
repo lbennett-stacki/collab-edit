@@ -1,0 +1,33 @@
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js v20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: |
+          cd ot
+          pnpm install
+
+      - name: Build OT
+        run: |
+          cd ot
+          pnpm build
+
+      - name: Test OT
+        run: |
+          cd ot
+          pnpm test

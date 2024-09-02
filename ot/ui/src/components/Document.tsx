@@ -115,6 +115,7 @@ export function Document() {
         }}
       />
       <canvas
+        data-testid="document-canvas"
         tabIndex={0}
         ref={canvasRef}
         style={{

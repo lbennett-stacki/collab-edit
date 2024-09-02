@@ -1,0 +1,12 @@
+{
+  "name": "@lbennett/collab-text-ot",
+  "private": true,
+  "version": "0.0.0",
+  "author": "Luke Bennett <lbennett@fastmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "dev": "pnpm -r --parallel dev"
+  }
+}
