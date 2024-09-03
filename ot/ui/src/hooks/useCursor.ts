@@ -15,9 +15,9 @@ export interface Coords {
 export type MousePosition = Coords;
 
 export function useCursor({
+  maxWidth,
   cursorPosition,
   canvasRef,
-  maxWidth,
   select,
   isDragging,
   hasFocus,
@@ -27,9 +27,9 @@ export function useCursor({
   lineHeight,
   textSize,
 }: {
+  maxWidth: number;
   cursorPosition: Selection | null;
   canvasRef: MutableRefObject<HTMLCanvasElement | null>;
-  maxWidth: number;
   select: (start: number, end: number) => void;
   isDragging: boolean;
   hasFocus: boolean;
@@ -54,15 +54,16 @@ export function useCursor({
       const box = canvasRef.current.getBoundingClientRect();
 
       const x = xInput - box.x;
-      const y = yInput - box.y;
+      const y =
+        yInput -
+        box.y -
+        parseInt(canvasRef.current.style.paddingTop.replace(/px$/, ""), 10);
 
       if (!context) {
         return null;
       }
 
-      const cursorY = Math.floor(
-        Math.max((y - lineHeight) / scale / lineHeight, 0),
-      );
+      const cursorY = Math.floor(Math.max(y / scale / lineHeight, 0));
 
       let textWidth = 0;
 
@@ -73,9 +74,9 @@ export function useCursor({
       let cursorPosition = charactersBeforeLine;
 
       for (let j = 0; j < text.length; j++) {
-        textWidth += context.measureText(text[j]).width;
+        textWidth += context.measureText(text[j]).width * scale;
 
-        if (textWidth * scale > x) {
+        if (textWidth > x) {
           cursorPosition += j;
           break;
         }
@@ -98,7 +99,7 @@ export function useCursor({
       );
 
       if (!cursorPositionNow) {
-        throw new Error("Cursor position now is not defined");
+        return;
       }
 
       select(cursorPositionNow, cursorPositionNow);
@@ -127,7 +128,7 @@ export function useCursor({
         yInput,
       );
       if (!cursorPositionNow) {
-        throw new Error("Cursor position now is not defined");
+        return;
       }
 
       select(cursorPosition.start, cursorPositionNow);
@@ -236,16 +237,47 @@ export function useCursor({
     [canvasRef, lineHeight, maxWidth],
   );
 
+  const renderPositionIndicator = useCallback(
+    (
+      selection: Selection,
+      start: MultilineCharacterPosition,
+      end: MultilineCharacterPosition | null,
+      index: number,
+    ) => {
+      const context = canvasRef.current?.getContext("2d");
+      if (!context) {
+        throw new Error("No canvas context");
+      }
+
+      let text = `${start.line}:${start.character} (${selection.start})`;
+
+      if (end !== null) {
+        text += ` to ${end.line}:${end.character} (${selection.end})`;
+      }
+
+      context.fillStyle = selection.color;
+      context.fillText(
+        text,
+        maxWidth - context.measureText(text).width,
+        textSize * (index + 1),
+      );
+    },
+    [canvasRef, textSize, maxWidth],
+  );
+
   const renderSelection = useCallback(
-    (selection: Selection) => {
+    (selection: Selection, index: number) => {
       const start = renderCursor(selection.start, selection.color);
 
+      let end = null;
       if (selection.start !== selection.end) {
-        const end = renderCursor(selection.end, selection.color);
+        end = renderCursor(selection.end, selection.color);
         renderSelectionBridge(start, end, selection.color);
       }
+
+      renderPositionIndicator(selection, start, end, index);
     },
-    [renderCursor, renderSelectionBridge],
+    [renderCursor, renderPositionIndicator, renderSelectionBridge],
   );
 
   return {

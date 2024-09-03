@@ -151,10 +151,7 @@ export class ClientDocument extends Document {
       const result = this.transform(op, transformed);
 
       transformed = result.transforming;
-      this.pending = new PendingOperation(
-        result.concurrent,
-        this.pending.revision,
-      );
+      this.pending = new PendingOperation(result.concurrent, this.revision);
     }
 
     for (let i = 0; i < this.queue.length; i++) {
@@ -198,6 +195,10 @@ export class ClientDocument extends Document {
   }
 
   private setPending(operation: Operation): void {
+    if (this.pending !== null) {
+      throw new Error("Attempted to overwrite pending op");
+    }
+
     this.pending = new PendingOperation(operation, this.revision);
     this.revision += 1;
   }

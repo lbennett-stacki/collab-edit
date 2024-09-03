@@ -8,6 +8,7 @@ export const useClickaway = (
     const handleClick = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) {
         onCickaway();
+        return;
       }
     };
 

@@ -3,12 +3,11 @@ import {
   ClientSelections,
   Selection,
 } from "@lbennett/collab-text-ot-core";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useCursor } from "./useCursor";
 import { useLines } from "./useLines";
 
 export function useDocumentCanvas({
-  initialCanvasWidth,
   cursorPosition,
   document,
   select,
@@ -17,7 +16,6 @@ export function useDocumentCanvas({
   content,
   cursorPositions,
 }: {
-  initialCanvasWidth: number;
   cursorPosition: Selection | null;
   document: ClientDocument | null;
   select: (start: number, end: number) => void;
@@ -30,14 +28,16 @@ export function useDocumentCanvas({
 
   const scale = window.devicePixelRatio ?? 1;
 
-  const maxWidth = initialCanvasWidth;
-  const textSize = 30 / scale;
+  const textSize = 18 / scale;
   const lineHeight = textSize;
 
+  const [maxWidth, setMaxWidth] = useState(canvasRef.current?.clientWidth ?? 0);
+
   const lines = useLines({
+    maxWidth,
     canvasRef,
     content,
-    maxWidth,
+    textSize,
     scale,
   });
 
@@ -73,6 +73,8 @@ export function useDocumentCanvas({
     const cssWidth = canvasRef.current.clientWidth;
     const cssHeight = canvasRef.current.height;
 
+    setMaxWidth(cssWidth);
+
     canvasRef.current.width = cssWidth;
     canvasRef.current.height = cssHeight;
 
@@ -89,8 +91,10 @@ export function useDocumentCanvas({
       );
     }
 
+    let i = 0;
     for (const position of Object.values(cursorPositions ?? {})) {
-      renderSelection(position);
+      renderSelection(position, i);
+      i += 1;
     }
   }, [
     renderSelection,
@@ -118,9 +122,24 @@ export function useDocumentCanvas({
     };
   }, [render, document]);
 
+  const resize = useCallback(() => {
+    render();
+  }, [render]);
+
+  useEffect(() => {
+    const resizeCb = () => {
+      return resize();
+    };
+
+    window.addEventListener("resize", resizeCb);
+
+    return () => {
+      window.removeEventListener("resize", resizeCb);
+    };
+  }, [resize]);
+
   return {
     canvasRef,
-    maxWidth,
     updateCursorPosition,
     updateSelection,
   };

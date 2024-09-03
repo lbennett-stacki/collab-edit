@@ -3,8 +3,6 @@ import { useClickaway } from "../hooks/useClickaway";
 import { useDocumentSocket } from "../hooks/useDocumentSocket";
 import { useDocumentCanvas } from "../hooks/useDocumentCanvas";
 
-const browserDocument = document;
-
 export function Document() {
   const mockInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -21,12 +19,9 @@ export function Document() {
     content,
   } = useDocumentSocket();
 
-  const initialCanvasWidth = 800;
-
   // TODO: simplify these arguments that fall through to useCursor
   const { updateCursorPosition, updateSelection, canvasRef } =
     useDocumentCanvas({
-      initialCanvasWidth,
       cursorPosition,
       cursorPositions,
       content,
@@ -67,10 +62,10 @@ export function Document() {
   );
 
   useEffect(() => {
-    browserDocument.addEventListener("keydown", handleKeyboard);
+    window.document.addEventListener("keydown", handleKeyboard);
 
     return () => {
-      browserDocument.removeEventListener("keydown", handleKeyboard);
+      window.document.removeEventListener("keydown", handleKeyboard);
     };
   }, [handleKeyboard]);
 
@@ -96,6 +91,7 @@ export function Document() {
     <div
       style={{
         display: "flex",
+        flexDirection: "column",
         justifyContent: "center",
         alignItems: "start",
       }}
@@ -119,13 +115,13 @@ export function Document() {
         tabIndex={0}
         ref={canvasRef}
         style={{
-          margin: "0 auto",
           border: "1px solid rgba(0,0,0,0.3)",
-          padding: "12px",
+          padding: "22px",
+          margin: "12px auto",
           width: "100%",
-          maxWidth: `${initialCanvasWidth}px`,
           height: "100%",
-          boxShadow: "10px 10px 5px rgba(0,0,0,0.1)",
+          maxWidth: "860px",
+          boxShadow: "10px 10px 0px rgba(0,0,0,0.1)",
         }}
         onMouseMove={(event) => {
           event.preventDefault();
@@ -137,12 +133,17 @@ export function Document() {
           setIsDragging(true);
           const stopDragging = () => {
             setIsDragging(false);
-            browserDocument.removeEventListener("mouseup", stopDragging);
+            window.document.removeEventListener("mouseup", stopDragging);
           };
-          browserDocument.addEventListener("mouseup", stopDragging);
+          window.document.addEventListener("mouseup", stopDragging);
           updateCursorPosition(event.clientX, event.clientY);
         }}
       />
+
+      <p>Pending:</p>
+      {document?.waitingFor?.toString()}
+      <p>Queue:</p>
+      {document?.queue.toString()}
     </div>
   );
 }

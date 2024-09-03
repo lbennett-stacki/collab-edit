@@ -11,11 +11,17 @@ import {
   SelectOperation,
   SelectOperationMessage,
 } from "@lbennett/collab-text-ot-core";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDocument } from "./useDocument";
 import { useWebSocket } from "./useWebSocket";
 
 export function useDocumentSocket() {
+  const [isPending, setIsPending] = useState(false);
+
+  const onConfirm = useCallback(() => {
+    setIsPending(false);
+  }, []);
+
   const {
     create: docCreate,
     document,
@@ -30,7 +36,9 @@ export function useDocumentSocket() {
     cursorPosition,
     cursorPositions,
     waitingFor,
-  } = useDocument();
+  } = useDocument({
+    onConfirm,
+  });
 
   const handlers = useMemo(() => {
     return {
@@ -105,6 +113,10 @@ export function useDocumentSocket() {
       throw new Error("Document is not waiting for an operation");
     }
 
+    if (isPending) {
+      return;
+    }
+
     // TODO: refactor
     if (document.waitingFor.operation instanceof InsertOperation) {
       send(new InsertOperationMessage(document.waitingFor));
@@ -115,7 +127,8 @@ export function useDocumentSocket() {
     } else {
       throw new Error("Unknown operation type");
     }
-  }, [document, send]);
+    setIsPending(true);
+  }, [isPending, document, send]);
 
   useEffect(() => {
     if (waitingFor === null) {

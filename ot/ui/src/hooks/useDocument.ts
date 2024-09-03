@@ -6,7 +6,7 @@ import {
 } from "@lbennett/collab-text-ot-core";
 import { useCallback, useState } from "react";
 
-export function useDocument() {
+export function useDocument({ onConfirm }: { onConfirm: () => void }) {
   const [document, setDocument] = useState<ClientDocument | null>(null);
   const [content, setContent] = useState<string>("");
   const [cursorPositions, setCursorPositions] =
@@ -114,7 +114,8 @@ export function useDocument() {
     }
     document.confirm();
     setWaitingFor(document.waitingFor);
-  }, [document]);
+    onConfirm?.();
+  }, [document, onConfirm]);
 
   const select = useCallback(
     (start: number, end: number) => {

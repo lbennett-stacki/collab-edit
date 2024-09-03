@@ -1,4 +1,5 @@
 import { Document } from "../components/Document";
+import "./global.css";
 
 function App() {
   return (
